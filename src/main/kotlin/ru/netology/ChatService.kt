@@ -15,7 +15,7 @@ class ChatService {
 
     fun addChatUser(chatId: Int, userId: Int){
         if(chats[chatId].ownerId != userId)
-                 chats[chatId].gastId = userId
+                 chats[chatId].guestId = userId
         else throw error("Owner can't write himself")
     }
 

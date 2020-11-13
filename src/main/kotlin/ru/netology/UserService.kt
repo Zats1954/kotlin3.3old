@@ -17,9 +17,9 @@ class UserService( val chats: ChatService ) {
     fun getUnreadChatsCount(user: User): Int {
         var countUnreadChat = 0
         chats.chats.forEach { chat: Chat ->
-            if (chat.ownerId == user.id || chat.gastId == user.id) { // чат отслеживает user
+            if (chat.ownerId == user.id || chat.guestId == user.id) { // чат отслеживает user
                     for(note in chat.notes.notes){
-                       if (!readNotes.contains(Pair(chat.id,note.id)) && note.ownerId!=user.id ){
+                       if (!user.readedNotes.contains(Pair(chat.id,note.id)) && note.ownerId!=user.id ){
                            countUnreadChat++
                            break}
                     }
@@ -29,9 +29,9 @@ class UserService( val chats: ChatService ) {
     }
 
     fun getChats(user:User):List<String>{
-        var list: MutableList<String> = mutableListOf()
+        val list: MutableList<String> = mutableListOf()
         // чаты пользователя
-        val userChat = chats.chats.filter{user.id in (listOf(it.gastId, it.ownerId))}
+        val userChat = chats.chats.filter{user.id in (listOf(it.guestId, it.ownerId))}
         //чаты с непустыми чужими сообщениями
         userChat.filter{it.notes.notes.filter{note:Note -> note.ownerId!=user.id}.isNotEmpty()}
 
@@ -41,11 +41,16 @@ class UserService( val chats: ChatService ) {
     }
 
     fun chatNotes(user:User,chatId: Int): String {
-        var info: String = chatId.toString()
-        chats.notes.notes.filter{!readNotes.contains(Pair(chatId, it.id))}
+        var info = "chat ${chatId.toString()}"                   // id чата
+        chats.chats[chatId].notes.notes.filter{!user.readedNotes.contains(Pair(chatId, it.id))}
             .sortedBy { it.id }
-            .let{info += "\n" + it.first().id
-                info += "\n" + it.size
-                it.forEach{note:Note -> readNote(user.id,chatId,note.id)}} //автоматически считаются прочитанными
+            .let {
+                if (!it.isEmpty()) {
+                    // id последнего сообщения, начиная с которого нужно подгрузить новые
+                    info += "\nпервое непрочитанное сообщение " + it.first().id
+                    it.forEach { note: Note -> readNote(user.id, chatId, note.id) } //автоматически считаются прочитанными
+                } else {info += "\nнепрочитанных сообщений нет"}
+             }
+        info += "\nвсего сообщений " + chats.chats[chatId].notes.notes.size           //  количество сообщений
         return info}
     }
